@@ -1,0 +1,116 @@
+═══════════════════════════════════════════════════════════════
+  РЕШЕНИЕ ПРОБЛЕМ С DOCKER И SYSTEMD
+═══════════════════════════════════════════════════════════════
+
+ПРОБЛЕМА 1: Docker daemon не запущен
+───────────────────────────────────────────────────────────────
+
+Ошибка: "Cannot connect to the Docker daemon at unix:///var/run/docker.sock"
+
+РЕШЕНИЕ:
+───────────────────────────────────────────────────────────────
+
+1. Запустите Docker daemon:
+   ────────────────────────
+   sudo systemctl start docker
+   sudo systemctl enable docker
+
+2. Проверьте статус:
+   ──────────────────
+   sudo systemctl status docker
+
+3. Проверьте, что вы в группе docker:
+   ───────────────────────────────────
+   groups
+   # Если нет docker в списке:
+   sudo usermod -aG docker $USER
+   newgrp docker
+
+4. Проверьте работу Docker:
+   ─────────────────────────
+   docker ps
+   # Должен показать список контейнеров (пустой, если нет запущенных)
+
+───────────────────────────────────────────────────────────────
+ПРОБЛЕМА 2: Systemd сервис не может найти docker-compose
+───────────────────────────────────────────────────────────────
+
+Ошибка: "ExecStart=/usr/bin/docker-compose up -d (code=exited, status=203/EXEC)"
+
+РЕШЕНИЕ:
+───────────────────────────────────────────────────────────────
+
+1. Проверьте, какая команда установлена:
+   ──────────────────────────────────────
+   which docker-compose
+   which docker
+   docker compose version
+
+2. Обновите файл n8n.service:
+   ────────────────────────────
+   sudo nano /etc/systemd/system/n8n.service
+
+   Замените строку:
+   ExecStart=/usr/bin/docker-compose up -d
+   
+   На (если используете docker compose plugin):
+   ExecStart=/usr/bin/docker compose up -d
+   
+   Или (если используете старый docker-compose):
+   ExecStart=/usr/local/bin/docker-compose up -d
+
+3. Перезагрузите systemd и перезапустите сервис:
+   ──────────────────────────────────────────────
+   sudo systemctl daemon-reload
+   sudo systemctl restart n8n.service
+   sudo systemctl status n8n.service
+
+═══════════════════════════════════════════════════════════════
+ПОЛНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ ДЕЙСТВИЙ
+═══════════════════════════════════════════════════════════════
+
+Выполните команды по порядку:
+
+1. Запуск Docker:
+   ───────────────
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   sudo systemctl status docker
+
+2. Добавление пользователя в группу docker:
+   ────────────────────────────────────────
+   sudo usermod -aG docker $USER
+   newgrp docker
+   docker ps  # Проверка
+
+3. Исправление systemd сервиса:
+   ─────────────────────────────
+   sudo nano /etc/systemd/system/n8n.service
+   
+   Убедитесь, что в файле:
+   ExecStart=/usr/bin/docker compose up -d
+   ExecStop=/usr/bin/docker compose down
+   
+   (БЕЗ дефиса между docker и compose)
+
+4. Перезагрузка systemd:
+   ──────────────────────
+   sudo systemctl daemon-reload
+
+5. Запуск сервиса:
+   ────────────────
+   sudo systemctl start n8n.service
+   sudo systemctl status n8n.service
+
+6. Проверка логов:
+   ───────────────
+   sudo journalctl -u n8n.service -f
+
+7. Проверка контейнера:
+   ─────────────────────
+   cd /opt/n8n
+   docker compose ps
+   docker compose logs
+
+═══════════════════════════════════════════════════════════════
+
