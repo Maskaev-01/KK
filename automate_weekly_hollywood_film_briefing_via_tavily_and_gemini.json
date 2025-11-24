@@ -1,0 +1,357 @@
+{
+    "id": "oca5MgiXvuk6uO9B",
+    "meta": {
+      "instanceId": "9c8f658dbece48b519a8ad7757c7d7db7a30c5f3fd29c9dc8afae32fe0c7711a",
+      "templateCredsSetupCompleted": true
+    },
+    "name": "Automate weekly Hollywood film briefing via Tavily and Gemini (Telegram)",
+    "tags": [],
+    "nodes": [
+      {
+        "id": "33bd06d0-a733-47d0-88ea-d921780bc4a9",
+        "name": "Send Telegram Message",
+        "type": "n8n-nodes-base.telegram",
+        "position": [
+          1504,
+          0
+        ],
+        "parameters": {
+          "operation": "sendMessage",
+          "chatId": "={{ $env.TELEGRAM_CHAT_ID || '-1001234567890' }}",
+          "text": "={{ $json.output.message }}",
+          "additionalFields": {
+            "parseMode": "Markdown"
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "telegramBotToken",
+            "name": "Telegram Bot"
+          }
+        },
+        "typeVersion": 1.1
+      },
+      {
+        "id": "49971303-18e4-4c16-b007-061cc84dbf62",
+        "name": "Hollywood News Research Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "position": [
+          736,
+          0
+        ],
+        "parameters": {
+          "text": "=You are an AI summarizer creating a weekly Hollywood film industry briefing for Telegram.\n\nYou will receive four Tavily search results:\n- Hollywood movies releasing this week\n- Hollywood box office results last week\n- Hollywood news\n- Must-watch Hollywood movies currently in theatres\n\nEach result contains `title` and `content`.\n\n---\n\n### TASK\nSummarize each result into Telegram-friendly Markdown format with emojis and bullet points:\n\n🎬 Releases  \n📊 Box Office  \n📰 News  \n🎥 Must-Watch Movies  \n\nFor **Must-Watch Movies**:\n- If details (reviews/hype) exist, summarize them briefly.\n- If only movie names appear, **assume reasons** (e.g., \"great for IMAX/4DX,\" \"big visual effects,\" \"audience buzz,\" or \"fan-favorite franchise\").\n\nIf no data at all, write \"No data available\".\n\n---\n\n### OUTPUT FORMAT\nReturn JSON with Telegram Markdown formatting with two fields: title and message. Example structure:\n- title: Еженедельный обзор Голливуда\n- message: Formatted Telegram Markdown text with sections for Releases, Box Office, News, and Must-Watch Movies\n\nIMPORTANT: Use Telegram Markdown syntax:\n- *bold* for section headers\n- • for bullet points\n- \\n for line breaks\n- Escape special characters: _ * [ ] ( ) ~ ` > # + - = | { } . !\n\nKeep message under 4096 characters (Telegram limit)."
+        },
+        "options": {},
+        "promptType": "define",
+        "hasOutputParser": true,
+        "typeVersion": 2.1
+      },
+      {
+        "id": "13a2e59f-09f9-45f4-8751-6ac14c2957b6",
+        "name": "Fetch Weekly Releases (Tavily)",
+        "type": "n8n-nodes-base.httpRequestTool",
+        "position": [
+          512,
+          224
+        ],
+        "parameters": {
+          "url": "https://api.tavily.com/search",
+          "method": "POST",
+          "options": {},
+          "jsonBody": "={\n  \"query\": \"hollywood movies releasing this week\",\n  \"search_depth\": \"basic\",\n  \"time_range\": \"week\",\n  \"max_results\": 5\n}\n",
+          "sendBody": true,
+          "sendHeaders": true,
+          "specifyBody": "json",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Authorization",
+                "value": "{{$credentials.TavilyApiKey}}"
+              }
+            ]
+          }
+        },
+        "typeVersion": 4.2
+      },
+      {
+        "id": "59d02c90-23b9-4837-836a-e47357c043bf",
+        "name": "Fetch Weekly Box Office (Tavily)",
+        "type": "n8n-nodes-base.httpRequestTool",
+        "position": [
+          704,
+          224
+        ],
+        "parameters": {
+          "url": "https://api.tavily.com/search",
+          "method": "POST",
+          "options": {},
+          "jsonBody": "={\n  \"query\": \"hollywood box office results last week\",\n  \"search_depth\": \"basic\",\n  \"time_range\": \"week\",\n  \"max_results\": 5\n}\n",
+          "sendBody": true,
+          "sendHeaders": true,
+          "specifyBody": "json",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Authorization",
+                "value": "{{$credentials.TavilyApiKey}}"
+              }
+            ]
+          }
+        },
+        "typeVersion": 4.2
+      },
+      {
+        "id": "5bbbfe58-2e1f-47ab-a76c-86a98a2e82ee",
+        "name": "Fetch Hollywood News (Tavily)",
+        "type": "n8n-nodes-base.httpRequestTool",
+        "position": [
+          896,
+          224
+        ],
+        "parameters": {
+          "url": "https://api.tavily.com/search",
+          "method": "POST",
+          "options": {},
+          "jsonBody": "={\n  \"query\": \"hollywood news latest casting director production\",\n  \"search_depth\": \"basic\",\n  \"time_range\": \"week\",\n  \"max_results\": 5\n}\n",
+          "sendBody": true,
+          "sendHeaders": true,
+          "specifyBody": "json",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Authorization",
+                "value": "{{$credentials.TavilyApiKey}}"
+              }
+            ]
+          }
+        },
+        "typeVersion": 4.2
+      },
+      {
+        "id": "f126d4d3-ff36-46bc-9fba-6a6035db4068",
+        "name": "Fetch Must-Watch Movies (Tavily)",
+        "type": "n8n-nodes-base.httpRequestTool",
+        "position": [
+          1088,
+          224
+        ],
+        "parameters": {
+          "url": "https://api.tavily.com/search",
+          "method": "POST",
+          "options": {},
+          "jsonBody": "={\n  \"query\": \"best hollywood movies playing in theatres\",\n  \"search_depth\": \"basic\",\n  \"time_range\": \"week\",\n  \"max_results\": 5\n}\n",
+          "sendBody": true,
+          "sendHeaders": true,
+          "specifyBody": "json",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Authorization",
+                "value": "{{$credentials.TavilyApiKey}}"
+              }
+            ]
+          }
+        },
+        "typeVersion": 4.2
+      },
+      {
+        "id": "465e0a1c-648d-4960-b476-fd6502d9e5ed",
+        "name": "Format Output for Telegram",
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "position": [
+          1296,
+          224
+        ],
+        "parameters": {
+          "jsonSchemaExample": "{\"title\":\"Еженедельный обзор Голливуда\",\"message\":\"Formatted Telegram Markdown message\"}"
+        },
+        "typeVersion": 1.3
+      },
+      {
+        "id": "11dacc4f-424c-467b-91c3-8fb86f30ab12",
+        "name": "Weekly Thursday Trigger",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "position": [
+          144,
+          0
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "weeks",
+                "triggerAtDay": [
+                  4
+                ],
+                "triggerAtHour": 7
+              }
+            ]
+          }
+        },
+        "typeVersion": 1.2
+      },
+      {
+        "id": "52a88f90-5dcf-4a9e-ad46-2a499da4049c",
+        "name": "Sticky Note",
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -512,
+          -400
+        ],
+        "parameters": {
+          "width": 576,
+          "height": 992,
+          "content": "## Попробуйте! 🎬\n\n### Этот n8n workflow создает **еженедельный обзор голливудской киноиндустрии** используя Tavily для поиска в реальном времени и Google Gemini для суммирования. Отправляет краткое сообщение в Telegram с **релизами фильмов, кассовыми сборами, новостями индустрии и рекомендациями**.\n\nИспользование: Идеально для **кино-журналистов, развлекательных блогов или любителей кино**, которые хотят автоматизированные еженедельные обновления в Telegram.\n\n### Как это работает\n\n* **Триггер:** Запускается каждый четверг утром (настраивается).\n* **Поиск:** Четыре запроса к Tavily API получают:\n  * Фильмы, выходящие на этой неделе\n  * Кассовые сборы за прошлую неделю\n  * Новости Голливуда\n  * Фильмы, которые стоит посмотреть в кинотеатрах\n* **Суммирование:** Google Gemini обрабатывает результаты поиска и форматирует их в Telegram-дружественный Markdown с эмодзи и списками.\n* **Вывод:** Сообщение автоматически отправляется в Telegram супергруппу через бота.\n\n### Как использовать\n\n* Настройте **Tavily API** и **Telegram Bot** credentials в n8n.\n* Создайте Telegram бота через @BotFather и получите Bot Token.\n* Добавьте бота в супергруппу и получите Chat ID (можно через @userinfobot или API).\n* Укажите Chat ID в node \"Send Telegram Message\" (или используйте переменную окружения TELEGRAM_CHAT_ID).\n* (Опционально) Измените поисковые запросы в Tavily nodes для фокуса на конкретных жанрах или регионах.\n* Настройте **schedule trigger** на предпочитаемый день/время.\n* Настройте Google Gemini API key: AIzaSyCALL9OIbqjVW34hDcoqODDb_I1ffHD5vU\n\n### Требования\n\n* Tavily API аккаунт (доступен бесплатный тариф)\n* Google Gemini API key для суммирования\n* Telegram бот (создать через @BotFather)\n* Telegram супергруппа (добавить бота в группу)\n\n### n8n - бесплатно?\n\nДа! n8n имеет открытый исходный код и бесплатную версию. Вы можете:\n- Установить n8n локально (self-hosted) - полностью бесплатно\n- Использовать n8n.cloud с бесплатным тарифом (ограниченные возможности)\n- Использовать коммерческую версию для расширенных функций\n\n### Нужна помощь?\n\nВсегда открыт для обратной связи и улучшений!"
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "aba34eae-8a56-4093-86d4-e7aad9859bc0",
+        "name": "Sticky Note1",
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          1760,
+          -400
+        ],
+        "parameters": {
+          "color": 7,
+          "width": 752,
+          "height": 896,
+          "content": "## Пример вывода в Telegram\n\n🎬 *Еженедельный обзор Голливуда*\n\n*🎬 Релизы этой недели*\n\n• Dora and the Search for Sol Dorado (2 июля 2025)\n• Jurassic World Rebirth (2 июля 2025)\n• The Old Guard 2 (2 июля 2025)\n• The Sound (27 июня 2025)\n\n*📊 Кассовые сборы*\n\n• Fantastic Four: First Steps – оценка $40M-$45M открытие\n• Bad Guys 2 – оценка $22M открытие\n• Naked Gun – оценка $16M открытие\n• Together – оценка $10M+ за 5-дневное открытие\n• Superman – $24.8 миллиона на прошлой неделе ($289.5 миллионов всего)\n• Jurassic World: Rebirth – $13.0 миллионов на прошлой неделе ($301.5 миллионов всего)\n• F1: The Movie – $6.2 миллиона на прошлой неделе ($165.5 миллионов всего)\n\n*📰 Новости индустрии*\n\n• Michael Peña присоединяется к Chris Hemsworth и Lily James в новой подводной боевике Amazon, *Subversion*.\n• Кастинг-директор ищет 2000 статистов для масштабной концертной сцены в новом сериале *9-1-1*.\n• Кастинг-директор *Emily in Paris* Juliette Menager обсуждает поиск Sylvie и выход Camille Razat.\n\n*🎥 Фильмы, которые стоит посмотреть*\n\n• Caught by the Tides – последний экспериментальный фильм Jia Zhangke, смешивающий воспоминания и архивы.\n• Sinners – Высокий рейтинг 9.5/10, захватывающий кинематографический опыт.\n• Fantastic Four: The First Steps – Большая победа Marvel, рейтинг 9/10 с потрясающей визуализацией.\n• MI: The Final Reckoning – Рейтинг 8.5/10, зрители в восторге от этого насыщенного экшена финала.\n• Superman – Любимая франшиза фанатов, рейтинг 8.5/10, мощное повествование.\n• Ballerina – Рейтинг 8.5/10, ожидается захватывающая хореография и экшн.\n• Thunderbolts – Рейтинг 7.5/10, захватывающий ансамблевый фильм с динамичными арками персонажей."
+        },
+        "typeVersion": 1
+      },
+      {
+        "id": "b93ba6e8-080c-48fd-8a19-517e2a985182",
+        "name": "Google Gemini 2.5 Flash",
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "position": [
+          304,
+          224
+        ],
+        "parameters": {
+          "options": {}
+        },
+        "credentials": {
+          "googlePalmApi": {
+            "id": "SuWwLWBsAfrDFgCm",
+            "name": "Google Gemini(PaLM) Api account"
+          }
+        },
+        "typeVersion": 1
+      }
+    ],
+    "active": false,
+    "pinData": {},
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "versionId": "dfc3ce2a-95ab-45e2-816b-f35f72fbba05",
+    "connections": {
+      "Format Output for Telegram": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Hollywood News Research Agent",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Google Gemini 2.5 Flash": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Hollywood News Research Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Weekly Thursday Trigger": {
+        "main": [
+          [
+            {
+              "node": "Hollywood News Research Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Hollywood News (Tavily)": {
+        "ai_tool": [
+          [
+            {
+              "node": "Hollywood News Research Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hollywood News Research Agent": {
+        "main": [
+          [
+            {
+              "node": "Send Telegram Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Weekly Releases (Tavily)": {
+        "ai_tool": [
+          [
+            {
+              "node": "Hollywood News Research Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Must-Watch Movies (Tavily)": {
+        "ai_tool": [
+          [
+            {
+              "node": "Hollywood News Research Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Weekly Box Office (Tavily)": {
+        "ai_tool": [
+          [
+            {
+              "node": "Hollywood News Research Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
