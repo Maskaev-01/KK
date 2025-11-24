@@ -17,7 +17,7 @@
         ],
         "parameters": {
           "operation": "sendMessage",
-          "chatId": "={{ $env.TELEGRAM_CHAT_ID || '-1001234567890' }}",
+          "chatId": "-1003496464929",
           "text": "={{ $json.output.message }}",
           "additionalFields": {
             "parseMode": "Markdown"

@@ -1,0 +1,49 @@
+═══════════════════════════════════════════════════════════════
+  БЫСТРЫЙ СТАРТ - НАСТРОЙКА N8N WORKFLOW
+═══════════════════════════════════════════════════════════════
+
+✅ УЖЕ НАСТРОЕНО В WORKFLOW:
+───────────────────────────────────────────────────────────────
+✓ Telegram Chat ID: -1003496464929 (уже вставлен в workflow)
+✓ Workflow готов к импорту
+
+📋 ЧТО НУЖНО СДЕЛАТЬ ПОСЛЕ ИМПОРТА:
+───────────────────────────────────────────────────────────────
+
+1. НАСТРОИТЬ TELEGRAM BOT CREDENTIALS
+   ───────────────────────────────────
+   • Откройте node "Send Telegram Message"
+   • Credentials → Create New → Telegram API
+   • Access Token: 8351155622:AAHCypFahKGGHUValHt6dN9LoSiDB4_tp9c
+   • Сохраните
+
+2. НАСТРОИТЬ GOOGLE GEMINI CREDENTIALS
+   ────────────────────────────────────
+   • Откройте node "Google Gemini 2.5 Flash"
+   • Credentials → Create New → Google Gemini API
+   • API Key: AIzaSyCALL9OIbqjVW34hDcoqODDb_I1ffHD5vU
+   • Сохраните
+
+3. НАСТРОИТЬ TAVILY API (если еще не настроено)
+   ─────────────────────────────────────────────
+   • Откройте любой Tavily node
+   • Credentials → Create New → Tavily API
+   • Вставьте ваш Tavily API key
+   • Сохраните
+
+4. ПРОВЕРИТЬ И ЗАПУСТИТЬ
+   ──────────────────────
+   • Убедитесь, что все nodes имеют зеленые галочки
+   • Нажмите "Execute Workflow" для тестирования
+   • Проверьте Telegram группу на наличие сообщения
+
+═══════════════════════════════════════════════════════════════
+  ВАЖНЫЕ ДАННЫЕ ДЛЯ СПРАВКИ
+═══════════════════════════════════════════════════════════════
+
+Telegram Bot Token: 8351155622:AAHCypFahKGGHUValHt6dN9LoSiDB4_tp9c
+Telegram Group ID:  -1003496464929
+Google Gemini API:  AIzaSyCALL9OIbqjVW34hDcoqODDb_I1ffHD5vU
+
+═══════════════════════════════════════════════════════════════
+

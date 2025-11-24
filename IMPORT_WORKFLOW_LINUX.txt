@@ -1,0 +1,202 @@
+═══════════════════════════════════════════════════════════════
+  ИМПОРТ WORKFLOW В N8N НА LINUX СЕРВЕРЕ (БЕЗ GUI)
+═══════════════════════════════════════════════════════════════
+
+Есть несколько способов импортировать workflow в n8n на сервере:
+
+───────────────────────────────────────────────────────────────
+СПОСОБ 1: ЧЕРЕЗ ВЕБ-ИНТЕРФЕЙС (САМЫЙ ПРОСТОЙ)
+───────────────────────────────────────────────────────────────
+
+1. Узнайте IP адрес вашего сервера:
+   ──────────────────────────────────
+   hostname -I
+   # или
+   ip addr show
+
+2. Откройте браузер на вашем компьютере и перейдите:
+   ────────────────────────────────────────────────────────────
+   http://ваш-ip-адрес:5678
+   # или если настроен домен:
+   https://your-domain.com
+
+3. Войдите в n8n используя учетные данные из .env файла
+
+4. Импортируйте workflow:
+   ───────────────────────
+   • Нажмите на меню (три точки) → "Import from File"
+   • Выберите файл automate_weekly_hollywood_film_briefing_via_tavily_and_gemini.json
+   • Workflow будет импортирован
+
+───────────────────────────────────────────────────────────────
+СПОСОБ 2: ЧЕРЕЗ N8N API (КОМАНДНАЯ СТРОКА)
+───────────────────────────────────────────────────────────────
+
+1. Скопируйте workflow файл на сервер:
+   ─────────────────────────────────────
+   # Если файл на вашем компьютере, используйте scp:
+   scp automate_weekly_hollywood_film_briefing_via_tavily_and_gemini.json \
+       user@your-server:/tmp/
+
+   # Или создайте файл прямо на сервере:
+   nano /tmp/workflow.json
+   # Вставьте содержимое файла, сохраните (Ctrl+O, Enter, Ctrl+X)
+
+2. Получите API ключ из n8n:
+   ───────────────────────────
+   • Войдите в n8n через браузер
+   • Settings → API → Create API Key
+   • Скопируйте ключ
+
+3. Импортируйте через API:
+   ────────────────────────
+   # Установите переменные
+   N8N_URL="http://localhost:5678"
+   API_KEY="your-api-key-here"
+   WORKFLOW_FILE="/tmp/workflow.json"
+
+   # Импорт workflow
+   curl -X POST \
+     -H "X-N8N-API-KEY: $API_KEY" \
+     -H "Content-Type: application/json" \
+     -d @$WORKFLOW_FILE \
+     "$N8N_URL/api/v1/workflows"
+
+   # Или одной строкой:
+   curl -X POST \
+     -H "X-N8N-API-KEY: your-api-key" \
+     -H "Content-Type: application/json" \
+     -d @/tmp/workflow.json \
+     http://localhost:5678/api/v1/workflows
+
+───────────────────────────────────────────────────────────────
+СПОСОБ 3: ПРЯМОЕ КОПИРОВАНИЕ В DOCKER VOLUME
+───────────────────────────────────────────────────────────────
+
+1. Найдите volume с данными n8n:
+   ───────────────────────────────
+   docker volume ls | grep n8n
+   # Обычно называется: n8n_n8n_data
+
+2. Скопируйте файл в volume:
+   ──────────────────────────
+   # Создайте временный контейнер для доступа к volume
+   docker run --rm \
+     -v n8n_n8n_data:/data \
+     -v /tmp:/backup \
+     alpine sh -c "cp /backup/workflow.json /data/"
+
+   # Или через docker compose:
+   docker compose exec n8n sh
+   # Внутри контейнера:
+   mkdir -p /home/node/.n8n/workflows
+   # Скопируйте файл (нужно будет использовать другой способ)
+
+3. Более простой способ - через docker cp:
+   ────────────────────────────────────────
+   # Сначала скопируйте файл в контейнер
+   docker cp /tmp/workflow.json n8n:/tmp/workflow.json
+   
+   # Затем переместите в нужную директорию
+   docker compose exec n8n sh -c "mkdir -p /home/node/.n8n/workflows && \
+     cp /tmp/workflow.json /home/node/.n8n/workflows/"
+
+   # Перезапустите n8n
+   docker compose restart n8n
+
+ПРИМЕЧАНИЕ: Этот способ не рекомендуется, так как n8n может не 
+            автоматически подхватить файл. Лучше использовать API.
+
+───────────────────────────────────────────────────────────────
+СПОСОБ 4: ЧЕРЕЗ SSH ТУННЕЛЬ (ЕСЛИ НЕТ ДОСТУПА К ПОРТУ)
+───────────────────────────────────────────────────────────────
+
+Если порт 5678 не доступен извне, создайте SSH туннель:
+
+1. На вашем локальном компьютере:
+   ─────────────────────────────────
+   ssh -L 5678:localhost:5678 user@your-server
+
+2. Откройте браузер:
+   ──────────────────
+   http://localhost:5678
+
+3. Импортируйте workflow как в способе 1
+
+───────────────────────────────────────────────────────────────
+РЕКОМЕНДУЕМЫЙ СПОСОБ: ВЕБ-ИНТЕРФЕЙС
+───────────────────────────────────────────────────────────────
+
+Самый простой и надежный способ:
+
+1. Убедитесь, что n8n запущен:
+   ────────────────────────────
+   cd /opt/n8n
+   docker compose ps
+   # Должен показать статус "Up"
+
+2. Проверьте доступность:
+   ───────────────────────
+   curl http://localhost:5678/healthz
+   # Должен вернуть: {"status":"ok"}
+
+3. Откройте в браузере с вашего компьютера:
+   ─────────────────────────────────────────
+   http://ваш-ip-адрес:5678
+
+4. Войдите и импортируйте workflow через UI
+
+───────────────────────────────────────────────────────────────
+АВТОМАТИЗИРОВАННЫЙ СКРИПТ ИМПОРТА ЧЕРЕЗ API
+───────────────────────────────────────────────────────────────
+
+Создайте скрипт /opt/n8n/import-workflow.sh:
+
+#!/bin/bash
+
+N8N_URL="${N8N_URL:-http://localhost:5678}"
+API_KEY="${N8N_API_KEY:-}"
+WORKFLOW_FILE="${1:-/tmp/workflow.json}"
+
+if [ -z "$API_KEY" ]; then
+    echo "Ошибка: Установите переменную N8N_API_KEY"
+    echo "Или передайте как: N8N_API_KEY=your-key ./import-workflow.sh workflow.json"
+    exit 1
+fi
+
+if [ ! -f "$WORKFLOW_FILE" ]; then
+    echo "Ошибка: Файл $WORKFLOW_FILE не найден"
+    exit 1
+fi
+
+echo "Импорт workflow из $WORKFLOW_FILE..."
+
+RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+    -H "X-N8N-API-KEY: $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d @"$WORKFLOW_FILE" \
+    "$N8N_URL/api/v1/workflows")
+
+HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+BODY=$(echo "$RESPONSE" | sed '$d')
+
+if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+    echo "✓ Workflow успешно импортирован!"
+    echo "$BODY" | jq '.id, .name' 2>/dev/null || echo "$BODY"
+else
+    echo "✗ Ошибка импорта (HTTP $HTTP_CODE):"
+    echo "$BODY"
+    exit 1
+fi
+
+Использование:
+chmod +x /opt/n8n/import-workflow.sh
+
+# Установите API ключ
+export N8N_API_KEY="your-api-key-here"
+
+# Импортируйте workflow
+/opt/n8n/import-workflow.sh automate_weekly_hollywood_film_briefing_via_tavily_and_gemini.json
+
+═══════════════════════════════════════════════════════════════
+
